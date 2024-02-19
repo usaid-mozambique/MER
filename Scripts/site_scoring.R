@@ -1,5 +1,4 @@
 
-rm(list = ls())
 
 # PURPOSE: To create a SIMS prioritization list using MER and Enhanced Monitoring indicator results
 # AUTHOR:  Joe Lara | USAID
@@ -24,7 +23,7 @@ library(mozR)
 val_period <- "2024 Q1"
 
 path_mer <- "Dataout/results_cumulative_new.rds"
-path_tpt <- "Dataout/tpt_comp.txt"
+path_tpt <- "Data/tpt_comp.txt"
 path_output <- glue::glue("Dataout/site_scoring/site_scoring_{val_period}.xlsx")
 path_monthly_output_repo <- "Dataout/site_scoring/" # folder path where historical datasets archived
 
