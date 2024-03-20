@@ -520,6 +520,38 @@ df_waterfall <- dg_7 %>%
   drop_na(value)
 
 
+# df_waterfall_lt <- dg_7 %>%
+#   filter(date >= "2022-06-20" & !is.na(date),
+#          !ageasentered %in% c("<15", "15+")) %>%
+#   select(datim_uid,
+#          period,
+#          funding_agency,
+#          partner_recode,
+#          snu1,
+#          psnu,
+#          sitename,
+#          sex,
+#          ageasentered,
+#          agecoarse,
+#          otherdisaggregate,
+#          TX_NEW,
+#          TX_CURR, 
+#          TX_CURR_3MO_PRIOR,
+#          TX_RTT,
+#          TX_ML,
+#          TX_NET_NEW) %>%
+#   mutate(ageasentered = case_when((period %in% c("2022 Q3", "2022 Q4", "2023 Q1") & ageasentered %in% c("50-54", "55-59", "60-64", "65+")) ~ "50+",
+#                                   TRUE ~ ageasentered),
+#          TX_ML_Died = case_when(otherdisaggregate == "Died" ~ TX_ML), # here i believe we have an error "
+#          TX_ML_Interruption_u3 = case_when(otherdisaggregate == "IIT 0-3m ART" ~ TX_ML),
+#          TX_ML_Interruption_3_5 = case_when(otherdisaggregate == "IIT 3-5m ART" ~ TX_ML),
+#          TX_ML_Interruption_6o = case_when(otherdisaggregate == "IIT 6+m ART" ~ TX_ML),
+#          TX_ML_Interruption_Transfer_Out = case_when(otherdisaggregate == "Transferred Out" ~ TX_ML)) %>%
+#   pivot_longer(starts_with("TX_"), names_to = "indicator", values_to = "value") %>%
+#   filter(!indicator == "TX_ML") %>%
+#   drop_na(value)
+
+
 df_waterfall %>%
   distinct(period, ageasentered) %>%
   arrange(period) %>%
@@ -556,9 +588,13 @@ write_tsv(
 
 write_tsv(
   df_waterfall,
-  glue("Dataout/mer_waterfall_cascade.txt"),
+  glue("Dataout/supplemental_trn_in/mer_waterfall_cascade.txt"),
   na = "")
-  
+
+# write_tsv(
+#   df_waterfall_lt,
+#   glue("Dataout/supplemental_trn_in/mer_waterfall_cascade_lt.txt"),
+#   na = "")
 
 write.xlsx(dg_triagulation,
            glue(path_triangulation_output,{max_period_tri},'.xlsx'),

@@ -1,5 +1,4 @@
 
-rm(list = ls())
 
 # PURPOSE: This script processes quarterly supplemental MER transfer-in indicator results submitted by partners.  This indicator is used to complete the accounting of ins/outs of ART and is incorporated into a waterfall cascade visual
 # AUTHOR:  Joe Lara | USAID
@@ -37,7 +36,8 @@ path_monthly_input_repo <- glue::glue("Data/supplemental/{period}/") # paths for
 path_quarterly_output_repo <- "Dataout/supplemental_trn_in/quarterly_processed/" # folder path where quarterly dataset archived
 path_quarterly_output_file <- path(path_quarterly_output_repo, file, ext = "txt") # composite path/filename where quarterly dataset saved
 path_quarterly_output_gdrive <- as_id("1QS8cOpDcdtNTtrdY-fsvJfMHs3MTH4GY") # google drive folder where quarterly dataset saved
-path_historic_output_file <- "Dataout/mer_waterfall_temp2.txt" # folder path where historic dataset archived
+path_historic_output_file <- "Dataout/mer_waterfall.txt" # folder path where historic dataset archived
+# path_historic_output_file <- "Dataout/mer_waterfall_temp2.txt" # folder path where historic dataset archived
 path_historic_output_gdrive <- as_id("1VNaZ2LnaUaW9IayH8Nqciz3tDo02vV56") # google drive folder where historic dataset saved
 
 site_removal <- c("jKg6rpNATKH_ITECH", "W04POMswKUF")
@@ -61,6 +61,11 @@ df_mer_waterfall <- read_delim("Dataout/supplemental_trn_in/mer_waterfall_cascad
                                delim = "\t", escape_double = FALSE,
                                trim_ws = TRUE) %>%
   filter(!datim_uid %in% c(site_removal))
+
+# df_mer_waterfall_lt <- read_delim("Dataout/supplemental_trn_in/mer_waterfall_cascade_lt.txt",
+#                                delim = "\t", escape_double = FALSE,
+#                                trim_ws = TRUE) %>%
+#   filter(!datim_uid %in% c(site_removal))
 
 
 
@@ -167,6 +172,38 @@ df_waterfall_final <- bind_rows(df_mer_waterfall, df_trn_in_tidy_history_1) %>%
   glimpse()
 
 
+# df_waterfall_final_lt <- bind_rows(df_mer_waterfall_lt, df_trn_in_tidy_history_1) %>%
+#   select(!c(snu1, psnu, sitename)) %>%
+#   left_join(datim_orgsuids, by = "datim_uid") %>%
+#   left_join(ajuda_site_map, by = "datim_uid") %>%
+#   mutate(across(c(snu1, psnu, sitename),
+#                 ~ case_when(datim_uid == "siMZUtd2cJW" ~ "_Military Mozambique",
+#                             TRUE ~ .))) %>%
+#   select(datim_uid,
+#          sisma_uid,
+#          site_nid,
+#          period,
+#          funding_agency,
+#          partner_recode,
+#          grm_sernap,
+#          snu1,
+#          psnu,
+#          sitename,
+#          ends_with("tude"),
+#          starts_with("program"),
+#          his_epts,
+#          his_emr,
+#          his_idart,
+#          his_disa,
+#          sex,
+#          starts_with("age"),
+#          otherdisaggregate,
+#          indicator,
+#          value) %>%
+#   filter(!is.na(value)) %>%
+#   glimpse()
+
+
 df_waterfall_final %>%
   filter(is.na(datim_uid)) %>%
   view()
@@ -189,6 +226,12 @@ write_tsv(
   df_waterfall_final,
   path_historic_output_file,
   na = "")
+
+
+# write_tsv(
+#   df_waterfall_final_lt,
+#   "Dataout/mer_waterfall_lt.txt",
+#   na = "")
 
 # write to google drive
 drive_put(path_historic_output_file,

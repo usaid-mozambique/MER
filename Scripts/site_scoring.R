@@ -10,6 +10,7 @@
 
 library(tidyverse)
 library(lubridate)
+library(glue)
 library(gophr)
 library(glamr)
 library(janitor)
@@ -20,7 +21,7 @@ library(mozR)
 
 # DEFINE PATHS & VALUES -----------------------------------------------------------
 
-val_period <- "2024 Q1"
+val_period <- "2023 Q3"
 
 path_mer <- "Dataout/results_cumulative_new.rds"
 path_tpt <- "Data/tpt_comp.txt"
@@ -79,12 +80,17 @@ df <- read_rds(path_mer) %>%
   filter(!is.na(value),
          mech_name %in% list_partners)
 
-max_period <- max(df$date)
+temp <- df |> 
+  filter(period == val_period)
+
+max_date <- max(temp$date)
+
+rm(temp)
 
 # CALCULATE SCORING -------------------------------------------------------
 
 # TX_CURR
-score_txcurr <- df %>% 
+score_clin_txcurr <- df %>% 
   filter(indicator == "TX_CURR",
          period == val_period) %>% 
   group_by(datim_uid) %>% 
@@ -99,7 +105,7 @@ score_txcurr <- df %>%
     TRUE ~ 0))
 
 # TX_CURR Pediatric
-score_txcurr_ped <- df %>% 
+score_clin_txcurr_ped <- df %>% 
   filter(indicator == "TX_CURR",
          period == val_period,
          agecoarse == "<15") %>% 
@@ -115,7 +121,7 @@ score_txcurr_ped <- df %>%
     TRUE ~ 0))
 
 # Viral Load Coverage
-score_vlc <- df %>%  
+score_clin_vlc <- df %>%  
   filter(indicator %in% c("TX_PVLS_D", "TX_CURR_6MO_PRIOR"),
          period == val_period) %>% 
   pivot_wider(names_from = indicator, values_from = value) %>% 
@@ -130,10 +136,10 @@ score_vlc <- df %>%
     between(value_vlc, .6, .75) ~ 3,
     between(value_vlc, .75, .9) ~ 4,
     value_vlc > .9 ~ 5,
-    TRUE ~ 0))
+    TRUE ~ 0)) 
 
 # Pediatric Viral Load Coverage
-score_vlc_ped <- df %>%  
+score_clin_vlc_ped <- df %>%  
   filter(indicator %in% c("TX_PVLS_D", "TX_CURR_6MO_PRIOR"),
          period == val_period,
          agecoarse == "<15") %>% 
@@ -152,7 +158,7 @@ score_vlc_ped <- df %>%
     TRUE ~ 0))
 
 # Viral Load Suppression
-score_vls <- df %>% 
+score_clin_vls <- df %>% 
   filter(indicator %in% c("TX_PVLS", "TX_PVLS_D"),
          period == val_period) %>% 
   pivot_wider(names_from = indicator, values_from = value) %>% 
@@ -171,7 +177,7 @@ score_vls <- df %>%
 
 
 # Pediatric Viral Load Suppression
-score_vls_ped <- df %>% 
+score_clin_vls_ped <- df %>% 
   filter(indicator %in% c("TX_PVLS", "TX_PVLS_D"),
        period == val_period,
        agecoarse == "<15") %>% 
@@ -191,7 +197,7 @@ score_vls_ped <- df %>%
 
 
 # PW Viral Load Suppression
-score_vls_pw <- df %>% 
+score_clin_vls_pw <- df %>% 
   filter(indicator %in% c("TX_PVLS_PLW", "TX_PVLS_PLW_D"),
          period == val_period) %>% 
   pivot_wider(names_from = indicator, values_from = value) %>% 
@@ -210,7 +216,7 @@ score_vls_pw <- df %>%
 
 
 # PMTCT_STAT_POS
-score_pmtct_pos <- df %>% 
+score_clin_pmtct_pos <- df %>% 
   filter(indicator %in% c("PMTCT_STAT_POS"),
          between(date, max(date) - months(9), max(date))) %>%  
   pivot_wider(names_from = indicator, values_from = value) %>% 
@@ -227,7 +233,7 @@ score_pmtct_pos <- df %>%
 
 
 # PMTCT_HEI_POS
-score_hei_pos <- df %>% 
+score_clin_hei_pos <- df %>% 
   filter(indicator %in% c("PMTCT_EID_MOD", "PMTCT_HEI_POS"),
          between(date, max(date) - months(9), max(date))) %>% 
   group_by(datim_uid, indicator) %>% 
@@ -248,7 +254,7 @@ score_hei_pos <- df %>%
 
 
 # PMTCT_EID <2m
-score_eid_u2m <- df %>% 
+score_clin_eid_u2m <- df %>% 
   filter(indicator %in% c("PMTCT_EID_Less_Equal_Two_Months", "PMTCT_EID_D"),
          between(date, max(date) - months(9), max(date))) %>% 
   group_by(datim_uid, indicator) %>% 
@@ -262,16 +268,17 @@ score_eid_u2m <- df %>%
            between(value_eid_u2m, .7, .8) ~ 3,
            between(value_eid_u2m, .8, .9) ~ 4,
            value_eid_u2m > .9 ~ 5,
-           TRUE ~ 0))
+           TRUE ~ 0)) %>% 
+  select(!c(PMTCT_EID_Less_Equal_Two_Months, PMTCT_EID_D))
 
 
 # TXTB
-score_txtb <- df %>%
+score_clin_txtb <- df %>%
   filter(indicator %in% c("TX_CURR", "TX_TB_D"), 
          if (str_detect(val_period, pattern = "Q2|Q4")) {
-           date == max_period
+           date == max_date
          } else {
-           date == max_period - months(3)
+           date == max_date - months(3)
          }
   ) %>%
   pivot_wider(names_from = indicator, values_from = value) %>% 
@@ -289,7 +296,7 @@ score_txtb <- df %>%
     TRUE ~ 0))
 
 # TX_ML
-score_txml <- df %>%
+score_clin_txml <- df %>%
   filter(indicator %in% c("TX_CURR", "TX_ML"),
          period == val_period) %>% 
   pivot_wider(names_from = indicator, values_from = value) %>% 
@@ -307,8 +314,8 @@ score_txml <- df %>%
     TRUE ~ 0))
 
 
-# TPT
-score_tpt <- read_delim(path_tpt, 
+# TPT  # this probably needs correction to take a period that aligns with the other indicators
+score_clin_tpt <- read_delim(path_tpt, 
                      delim = "\t", escape_double = FALSE, 
                      trim_ws = TRUE) %>% 
   rename(datim_uid = orgunituid,
@@ -327,43 +334,47 @@ score_tpt <- read_delim(path_tpt,
 
 # COMPILE -----------------------------------------------------------------
 
-df_compile <- score_vlc %>% 
-  left_join(score_tpt) %>% # MOST RECENT PERIOD (FY22 Q2) CALCULATED USING TX_CURR FROM 2 QUARTERS AGO
-  left_join(score_txtb) %>% # MOST RECENT PERIOD (FY22 Q2)
-  left_join(score_txcurr) %>% # MOST RECENT PERIOD (FY22 Q2)
-  left_join(score_txcurr_ped) %>% # MOST RECENT PERIOD (FY22 Q2)
-  left_join(score_txml) %>% # MOST RECENT PERIOD (FY22 Q2). NOTE THIS IS TX_ML / TX_CURR
-  left_join(score_vlc_ped) %>% # MOST RECENT PERIOD (FY22 Q2) CALCULATED USING TX_CURR FROM 2 QUARTERS AGO
-  left_join(score_vls) %>% # MOST RECENT PERIOD (FY22 Q2)
-  left_join(score_vls_ped) %>% # MOST RECENT PERIOD (FY22 Q2)
-  left_join(score_vls_pw) %>% # MOST RECENT PERIOD (FY22 Q2)
-  left_join(score_pmtct_pos) %>% # LAST 4 QUARTERS SUMMED
-  left_join(score_eid_u2m) %>% # MOST RECENT PERIOD NUMERATOR WITH PMTCT_EID_D FROM 2 QUARTERS AGO
-  left_join(score_hei_pos) %>%  # MOST RECENT PERIOD (FY22 Q2)
-  mutate(score_total = rowSums(across(starts_with("score"))),
-         score_total_wo_volume = rowSums(across(contains(c("score_tpt", 
-                                                           "score_txtb", 
-                                                           "score_txml",
-                                                           "score_vlc",
-                                                           "score_vlc_u15",
-                                                           "score_vls",
-                                                           "score_vls_ped",
-                                                           "score_vls_pw",
-                                                           "score_eid_u2m",
-                                                           "score_hei_pos")))),
+df_compile <- df_ajuda %>%
+  filter(partner_pepfar_clinical != "MISAU") %>% 
+  rename("partner" = partner_pepfar_clinical) %>% 
+  left_join(score_clin_tpt) %>% # MOST RECENT PERIOD (FY22 Q2) CALCULATED USING TX_CURR FROM 2 QUARTERS AGO
+  left_join(score_clin_txtb) %>% # MOST RECENT PERIOD (FY22 Q2)
+  left_join(score_clin_txcurr) %>% # MOST RECENT PERIOD (FY22 Q2)
+  left_join(score_clin_txcurr_ped) %>% # MOST RECENT PERIOD (FY22 Q2)
+  left_join(score_clin_txml) %>% # MOST RECENT PERIOD (FY22 Q2). NOTE THIS IS TX_ML / TX_CURR
+  left_join(score_clin_vlc_ped) %>% # MOST RECENT PERIOD (FY22 Q2) CALCULATED USING TX_CURR FROM 2 QUARTERS AGO
+  left_join(score_clin_vls) %>% # MOST RECENT PERIOD (FY22 Q2)
+  left_join(score_clin_vls_ped) %>% # MOST RECENT PERIOD (FY22 Q2)
+  left_join(score_clin_vls_pw) %>% # MOST RECENT PERIOD (FY22 Q2)
+  left_join(score_clin_pmtct_pos) %>% # LAST 4 QUARTERS SUMMED
+  left_join(score_clin_eid_u2m) %>% # MOST RECENT PERIOD NUMERATOR WITH PMTCT_EID_D FROM 2 QUARTERS AGO
+  left_join(score_clin_hei_pos) %>% # MOST RECENT PERIOD (FY22 Q2)
+  mutate(across(.col = starts_with("score"), .fns = ~ replace_na(.x, 0))) %>%  
+  rowwise %>%
+  mutate(score_clin = sum(c_across(starts_with("score")), na.rm = TRUE),
+         score_clin_wo_volume = rowSums(across(contains(c("score_tpt", 
+                                                          "score_txtb", 
+                                                          "score_txml",
+                                                          "score_vlc",
+                                                          "score_vlc_u15",
+                                                          "score_vls",
+                                                          "score_vls_ped",
+                                                          "score_vls_pw",
+                                                          "score_clin_eid_u2m",
+                                                          "score_clin_hei_pos")))),
          period = val_period) %>% 
-  relocate(starts_with("score_"), .after = last_col()) %>% 
+  relocate(starts_with("score"), .after = last_col()) %>% 
   relocate(period, .after = datim_uid) %>% 
-  arrange((score_total)) %>% 
+  arrange((score_clin)) %>% 
+  select(!c(snu, psnu, sitename, partner)) %>%
   glimpse()
-
 
 
 # WRITE TO DISK -----------------------------------------------------------
 
 write.xlsx(df_compile, 
            path_output, 
-           sheetName = "sheet_name",
+           sheetName = glue::glue({val_period}),
            overwrite = TRUE,
            append = TRUE)
 
@@ -378,8 +389,7 @@ sims_prioritization_tidy_history <- historic_files %>%
   reduce(rbind) %>% 
   left_join(df_ajuda, by = "datim_uid") %>% 
   relocate(snu:partner_pepfar_clinical, .after = datim_uid) %>% 
-  select(snu, psnu, sitename, datim_uid, period, score_total) %>% 
-  pivot_wider(names_from = period, values_from = score_total)
+  select(snu, psnu, sitename, datim_uid, period, score_clin, score_clin_wo_volume)
 
 
 write.xlsx(sims_prioritization_tidy_history, 
