@@ -21,7 +21,7 @@ library(mozR)
 
 # DEFINE PATHS & VALUES -----------------------------------------------------------
 
-val_period <- "2023 Q3"
+val_period <- "2023 Q2"
 
 path_mer <- "Dataout/results_cumulative_new.rds"
 path_tpt <- "Data/tpt_comp.txt"
@@ -342,6 +342,7 @@ df_compile <- df_ajuda %>%
   left_join(score_clin_txcurr) %>% # MOST RECENT PERIOD (FY22 Q2)
   left_join(score_clin_txcurr_ped) %>% # MOST RECENT PERIOD (FY22 Q2)
   left_join(score_clin_txml) %>% # MOST RECENT PERIOD (FY22 Q2). NOTE THIS IS TX_ML / TX_CURR
+  left_join(score_clin_vlc) %>% # MOST RECENT PERIOD (FY22 Q2) CALCULATED USING TX_CURR FROM 2 QUARTERS AGO
   left_join(score_clin_vlc_ped) %>% # MOST RECENT PERIOD (FY22 Q2) CALCULATED USING TX_CURR FROM 2 QUARTERS AGO
   left_join(score_clin_vls) %>% # MOST RECENT PERIOD (FY22 Q2)
   left_join(score_clin_vls_ped) %>% # MOST RECENT PERIOD (FY22 Q2)
@@ -389,7 +390,7 @@ sims_prioritization_tidy_history <- historic_files %>%
   reduce(rbind) %>% 
   left_join(df_ajuda, by = "datim_uid") %>% 
   relocate(snu:partner_pepfar_clinical, .after = datim_uid) %>% 
-  select(snu, psnu, sitename, datim_uid, period, score_clin, score_clin_wo_volume)
+  select(snu, psnu, sitename, datim_uid, period, starts_with("score_"), score_clin, score_clin_wo_volume)
 
 
 write.xlsx(sims_prioritization_tidy_history, 
