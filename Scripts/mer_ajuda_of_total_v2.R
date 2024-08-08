@@ -9,6 +9,7 @@
 
 library(tidyverse)
 library(glamr)
+library(mozR)
 library(readxl)
 library(janitor)
 library(glue)
@@ -23,22 +24,150 @@ load_secrets()
 
 # PATHS & VALUES -------------------------------------------------------------------
 
+value_period <- "2024 Q1"
 
-period <- "FY24Q1"
-
-
-
-
-remove_dup <- c("ChVIuS0HRZ8", "KzmQ90ne3V1", "ftbjGljVY2B") # remove reporting duplicates from mer dataset (lindsay indicated these sites were duplicated)
-path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U")
+file_date <- base::format(as.Date(Sys.Date()), "_%Y_%m_%d")
+path_mer <- "Dataout/results_cumulative_new.rds"
 path_dedup_map <- as_sheets_id("14asAzxiRf73ek2D5ImQ0Beu6oL635q7nbc2FgWPBxkg")
 path_output <- "Dataout/ajuda_of_national/ajuda_of_national.xlsx"
-file_date <- base::format(as.Date(Sys.Date()), 
-                          "_%Y_%m_%d")
 
-indicators <- c("HTS_TST_POS", "PMTCT_STAT", "PMTCT_STAT_POS", "PMTCT_EID", "PMTCT_HEI_POS", "TX_CURR")
+
+# remove_dup <- c("ChVIuS0HRZ8", "KzmQ90ne3V1", "ftbjGljVY2B") # remove reporting duplicates from mer dataset (lindsay indicated these sites were duplicated)
+# path_ajuda_site_map <- as_sheets_id("1CG-NiTdWkKidxZBDypXpcVWK2Es4kiHZLws0lFTQd8U")
+# path_dedup_map <- as_sheets_id("14asAzxiRf73ek2D5ImQ0Beu6oL635q7nbc2FgWPBxkg")
+# 
+# 
+# 
+# indicators <- c("HTS_TST_POS", "PMTCT_STAT", "PMTCT_STAT_POS", "PMTCT_EID", "PMTCT_HEI_POS", "TX_CURR")
 
 # LOAD DATA ----------------------------
+
+
+# load clinical partner metadata from ajuda site map
+ajuda_meta_partner_clinical <- pull_sitemap() |>
+  select(datim_uid, 
+         mech_name = partner_pepfar_clinical) |> 
+  mutate(mech_name = case_when(mech_name == "MISAU" ~ "MISAU Graduation",
+                               .default = mech_name))
+  
+# load alternate partner metadata from ajuda site map
+ajuda_meta_partner_alt <- pull_sitemap(sheetname = "map_partner_alt") %>%  select(datim_uid, partner_alt)
+
+# load mer data
+dg <- read_rds(path_mer)
+
+
+
+# MUNGE -------------------------------------------------------------------
+
+dg_1 <- dg |> 
+  
+  # filter for desired quarter
+  filter(period == value_period,
+         period_type == "results",
+         sitetype %in% c("Facility", "Military")) |> 
+  
+  # select required variables
+  select(datim_uid,
+         snu1,
+         psnu,
+         sitename,
+         period,
+         HTS_TST_POS,
+         TX_CURR,
+         PMTCT_STAT,
+         PMTCT_STAT_POS,
+         PMTCT_HEI_POS,
+         PMTCT_EID_D) |> 
+  
+  # summarize group sums
+  group_by(datim_uid, snu1, psnu, sitename) |> 
+  summarize(across(where(is.numeric), ~ sum(.x, na.rm = TRUE))) |> 
+  ungroup()
+
+
+dg_remove <- dg_1 |> 
+  filter(if_all(c(HTS_TST_POS,
+                  TX_CURR,
+                  PMTCT_STAT,
+                  PMTCT_STAT_POS,
+                  PMTCT_HEI_POS,
+                  PMTCT_EID_D), ~. == 0))
+
+dg_remove <- unique(dg_remove$datim_uid)
+  
+
+dg_2 <- dg_1 |> 
+  filter(!datim_uid %in% dg_remove) |> 
+  
+    # arrange dataframe by tx_curr (highest to lowest) for calculating cumulative treatment contribution
+  arrange_at(vars(TX_CURR), desc) |>
+
+  # calculate cumulative tx_curr and percentage results
+  mutate(TX_CURR_cum = cumsum(TX_CURR),
+         TX_CURR_cum_per = TX_CURR_cum / sum(TX_CURR),
+         TX_CURR_cum_per = replace_na(TX_CURR_cum_per, 1),
+         PMTCT_HEI_POS_per = PMTCT_HEI_POS / PMTCT_EID_D,
+         PMTCT_HEI_POS_per = replace_na(PMTCT_HEI_POS_per, 0)) |> 
+  
+  # join in pepfar clinical partner meta data
+  left_join(ajuda_meta_partner_clinical, 
+            by = join_by(datim_uid)) |> 
+  
+  mutate(site_type = case_when(mech_name %in% c("JHPIEGO-DoD", "CCS", "ECHO", "FGH", "EGPAF", "ICAP", "ARIEL") ~ "99-AJUDA",
+                               .default = "01-Sustainability"),
+         partner_alt = NA
+  ) |> 
+
+  # relocate variables
+  relocate(contains("_cum"), .after = TX_CURR) |> 
+  relocate(mech_name, .after = sitename) |>
+  relocate(partner_alt, .after = mech_name) |>
+  relocate(site_type, .before = mech_name) 
+
+
+  
+
+# CREATE EXCEL OUTPUT -----------------------------------------------------
+
+wb = createWorkbook()
+sht = addWorksheet(wb, "Data")
+pct = createStyle(numFmt = "0.0%")
+num <- createStyle(numFmt = "#,##0")
+
+writeData(wb, sht, dg_1)
+addStyle(wb, sht, style = pct, cols = c(11, 16), rows = 2:(nrow(dg_1)+1), gridExpand=TRUE)
+addStyle(wb, sht, style = num, cols = c(8, 9, 10, 12, 13, 14, 15), rows = 2:(nrow(dg_1)+1), gridExpand=TRUE)
+saveWorkbook(wb, 
+             glue::glue("Dataout/ajuda_of_national/ajuda_of_national{file_date}.xlsx"),
+             overwrite = TRUE)         
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 dg <- read_rds("Data/Genie/dg_ref.rds")

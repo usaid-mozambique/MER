@@ -316,8 +316,6 @@ dg_2022_2024$sitename[dg_2022_2024$orgunituid=="EslaBcDD5mZ"]<-"Inhamizua CS"
 dg_2022_2024$orgunituid[dg_2022_2024$orgunituid=="EslaBcDD5mZ"]<-"wmXdfKNX0qT"
 
 
-
-
 # PRINT IM SITE OUTPUT TO DISK ----------------------------------------------------
 
 

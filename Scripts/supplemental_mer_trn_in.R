@@ -27,7 +27,7 @@ load_secrets()
 # VALUES & PATHS -----------------------------------------------------------
 
 # update each month
-period <- "2024 Q1" # UPDATE EACH QUARTER
+period <- "2024 Q3" # UPDATE EACH QUARTER
 file <- glue("mer_supplemental_trn_in_",{period})
 
 path_monthly_input_repo <- glue::glue("Data/supplemental/{period}/") # paths for inmporting monthly ip submissions
@@ -210,12 +210,12 @@ df_waterfall_final %>%
 
 
 df_waterfall_final %>%
-  filter(period == "2023 Q4") %>%
+  filter(period == period) %>%
   distinct(period, ageasentered) %>%
   print(n=100)
 
 df_waterfall_final %>%
-  filter(period == "2023 Q4") %>%
+  filter(period == period) %>%
   distinct(period, indicator) %>%
   print(n=100)
 

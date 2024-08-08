@@ -102,6 +102,28 @@ dg_1 <- dg %>%
                                  if_else(numeratordenom %in% c("D"), "_D", "")))
 
 
+# fix for FY24 Q1 and Q2 data errors in genie
+dg_1 <- dg_1 |> 
+  mutate(exclusion_filter = case_when(mech_name == "MISAU" & fy == 2024 & (!partner_recode %in% c("MISAU", "Ministry of Health Mozambique")) ~ "Exclude",
+                            TRUE ~ "")) |> 
+  filter(exclusion_filter != "Exclude") |> 
+  select(!exclusion_filter)
+
+# Exclude Catandica CS and Vilanculous CS from MISAU
+dg_1 <- dg_1 |> 
+  mutate(exclusion_filter = case_when(mech_name == "MISAU" & fy == 2024 & period == "Q2" & (indicator %in% clinical_indicators) & (orgunituid %in% c("ub0cVLa8j1i", "jjWur7wj2v8")) ~ "Exclude",
+                                      TRUE ~ "")) |> 
+  filter(exclusion_filter != "Exclude") |> 
+  select(!exclusion_filter)
+  
+# exclude Tete_CP from MISAU
+dg_1 <- dg_1 |> 
+  mutate(exclusion_filter = case_when(mech_name == "MISAU" & fy == 2024 & period == "Q2" & (orgunituid %in% c("WAVIEeXwnV6")) ~ "Exclude",
+                                      TRUE ~ "")) |> 
+  filter(exclusion_filter != "Exclude") |> 
+  select(!exclusion_filter)
+  
+
 # 1.3 RECODE DATE FOR COHORT INDICATORS & UNION TO MAIN DATAFRAME ----------------------------
 
 
