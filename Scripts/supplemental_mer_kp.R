@@ -20,7 +20,7 @@ load_secrets()
 # VALUES & PATHS -----------------------------------------------------------
 
 # update each month
-period <- "2024 Q3" # UPDATE EACH QUARTER
+period <- "2024 Q4" # UPDATE EACH QUARTER
 file <- glue("mer_supplemental_kp_",{period})
 
 path_monthly_input_repo <- glue::glue("Data/supplemental/{period}/") # paths for inmporting monthly ip submissions

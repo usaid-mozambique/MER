@@ -21,7 +21,7 @@ load_secrets()
 # VALUES & PATHS -----------------------------------------------------------
 
 # update each month
-period <- "2024 Q3" # UPDATE EACH QUARTER
+period <- "2024 Q4" # UPDATE EACH QUARTER
 file <- glue::glue("mer_supplemental_vl_{period}")
 
 

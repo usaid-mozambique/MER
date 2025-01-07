@@ -21,7 +21,7 @@ library(mozR)
 
 # DEFINE PATHS & VALUES -----------------------------------------------------------
 
-val_period <- "2024 Q2"
+val_period <- "2024 Q4"
 
 path_mer <- "Dataout/results_cumulative_new.rds"
 path_tpt <- "Data/tpt_comp.txt"

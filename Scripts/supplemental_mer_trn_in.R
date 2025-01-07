@@ -27,7 +27,7 @@ load_secrets()
 # VALUES & PATHS -----------------------------------------------------------
 
 # update each month
-period <- "2024 Q3" # UPDATE EACH QUARTER
+period <- "2024 Q4" # UPDATE EACH QUARTER
 file <- glue("mer_supplemental_trn_in_",{period})
 
 path_monthly_input_repo <- glue::glue("Data/supplemental/{period}/") # paths for inmporting monthly ip submissions
@@ -69,15 +69,23 @@ df_mer_waterfall <- read_delim("Dataout/supplemental_trn_in/mer_waterfall_cascad
 
 
 
-cntry <- "Mozambique"
-uid <- get_ouuid(cntry)
-datim_orgsuids <- pull_hierarchy(uid, username = datim_user(), password = datim_pwd()) %>%
-  filter(!is.na(facility) & !is.na(psnu)) %>%
-  select(datim_uid = orgunituid,
-         snu1,
-         psnu = community, # changed to community with update to datim
-         sitename = facility) %>%
-  arrange(snu1, psnu, sitename)
+# cntry <- "Mozambique"
+# uid <- get_ouuid(cntry)
+# datim_orgsuids <- pull_hierarchy(uid, username = datim_user(), password = datim_pwd()) %>%
+#   filter(!is.na(facility) & !is.na(psnu)) %>%
+#   select(datim_uid = orgunituid,
+#          snu1,
+#          psnu = community, # changed to community with update to datim
+#          sitename = facility) %>%
+#   arrange(snu1, psnu, sitename)
+
+datim_orgsuids <- read_csv("~/GitHub/Enhanced_Monitoring/Documents/datim_uids.csv") |>
+  select(datim_uid, 
+         snu,
+         psnu, 
+         sitename) |> 
+  arrange(snu, psnu, sitename) |> 
+  rename(snu1 = snu)
 
 
 # FUNCTIONS RUN --------------------------------------------------

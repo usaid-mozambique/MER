@@ -5,8 +5,8 @@
 
 library(tidyverse)
 library(lubridate)
-library(gophr)
-library(glamr)
+# library(gophr)
+# library(glamr)
 library(readxl)
 library(openxlsx)
 
@@ -179,7 +179,7 @@ dg_2023_2024 <- read_delim(path_site_im_2023_2024, # OK
             snu2,
             snu2uid,
             cop22_snuprioritization,
-            is_indigenous_prime_partner,
+            local_prime_partner,
             use_for_age,
             target_age_2024,
             target_modality_2024,
@@ -363,7 +363,7 @@ write_rds(
 #             source_name))
 
 
-dg_psnu_2022 <- read_psd(path_dg_psnu_2022) %>% 
+dg_psnu_2022 <- read_delim(path_dg_psnu_2022) %>% 
   select(-c(operatingunit,
             operatingunituid,
             country,
@@ -386,7 +386,7 @@ dg_psnu_2022 <- read_psd(path_dg_psnu_2022) %>%
 
 
 
-dg_psnu_2023_2024 <- read_psd(path_dg_psnu_2023_2024) %>% 
+dg_psnu_2023_2024 <- read_delim(path_dg_psnu_2023_2024) %>% 
   select(-c(operatingunit,
             operatingunituid,
             country,

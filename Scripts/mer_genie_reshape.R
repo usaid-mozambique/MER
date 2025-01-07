@@ -387,6 +387,8 @@ dg_5 <- dg_4 %>%
          TX_ML_IIT_3_Months_Less = case_when((otherdisaggregate == "IIT 0-3m ART") ~ TX_ML),
          TX_PatientLoss = case_when((!otherdisaggregate == "Transferred Out") ~ TX_ML),
          PMTCT_EID_MOD = case_when((otherdisaggregate == "EID First Test" | is.na(otherdisaggregate)) ~ PMTCT_EID), # new indicator
+         PMTCT_EID_MOD_2nd = case_when((otherdisaggregate == "EID Second Test or more" | is.na(otherdisaggregate)) ~ PMTCT_EID), # new indicator
+         
          PMTCT_EID_MOD_2_12MO = case_when((ageasentered == "02 - 12 Months") ~ PMTCT_EID_MOD), # new indicator
          
          HTS_TST_PostANC = case_when((fiscal_year < 2024 & modality == "Post ANC1" | fiscal_year > 2023 & modality %in% c("PMTCT Post ANC1 Breastfeeding", "PMTCT Post ANC1 Pregnant/L&D")) ~ HTS_TST), # new indicator

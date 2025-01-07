@@ -208,6 +208,12 @@ df_disa_subset_fy24q2 <- df_disa_subset %>%
   mutate(period = max(period),
          date = max(date))
 
+df_disa_subset_fy24q3 <- df_disa_subset %>% 
+  filter(date >= as.Date("2024-06-20") - months(11)) %>% 
+  filter(date <= as.Date("2024-06-20")) %>% 
+  mutate(period = max(period),
+         date = max(date))
+
 df_disa_subset_fy23q1 %>% 
   distinct(period, date)
 df_disa_subset_fy23q2 %>% 
@@ -220,7 +226,8 @@ df_disa_subset_fy24q1 %>%
   distinct(period, date)
 df_disa_subset_fy24q2 %>% 
   distinct(period, date)
-
+df_disa_subset_fy24q3 %>% 
+  distinct(period, date)
 
 
 # MUNGE MI ----------------------------------------------------------------
@@ -242,7 +249,7 @@ df_mi_subset <- df_mi %>%
 # COMPILE AND CLEAN -------------------------------------------------------
 
 
-df_combine <- bind_rows(df_mer_subset, df_sup_subset, df_disa_subset_fy23q1, df_disa_subset_fy23q2, df_disa_subset_fy23q3, df_disa_subset_fy23q4, df_disa_subset_fy24q1, df_disa_subset_fy24q2) %>% 
+df_combine <- bind_rows(df_mer_subset, df_sup_subset, df_disa_subset_fy23q1, df_disa_subset_fy23q2, df_disa_subset_fy23q3, df_disa_subset_fy23q4, df_disa_subset_fy24q1, df_disa_subset_fy24q2, df_disa_subset_fy24q3) %>% 
   select(!c(partner, snu, psnu, sitename)) %>% 
   left_join(df_sitemap, by = "datim_uid") %>% 
   left_join(df_psnuuid %>% select(psnu, psnuuid), by = "psnu") %>% 
@@ -250,7 +257,7 @@ df_combine <- bind_rows(df_mer_subset, df_sup_subset, df_disa_subset_fy23q1, df_
   glimpse()
 
 check <- df_combine %>% 
-  filter(period == "2024 Q2") %>% 
+  filter(period == "2024 Q3") %>% 
   filter(str_detect(source, "EPTS"))
   
 check %>% distinct(source, ageasentered) %>% print(n=100)
@@ -261,12 +268,6 @@ unique(df_combine$source)
 unique(df_combine$pop_type)
 unique(df_combine$sex)
 unique(df_combine$ageasentered)
-
-temp <- df_combine |> 
-  filter(ageasentered == "45-52") |> 
-  # distinct(partner_pepfar_clinical) |> 
-  distinct(period) |> 
-  print()
 
 
 write_tsv(
